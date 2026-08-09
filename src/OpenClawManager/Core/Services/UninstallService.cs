@@ -55,6 +55,17 @@ public sealed class UninstallService : IUninstallService
         var state = await _stateStore.LoadAsync(cancellationToken);
         try
         {
+            if (options.RemoveOpenClaw && state.GatewayInstalledByManager && !options.RemoveGateway)
+            {
+                return Failure("OpenClaw 仍被已安装的 Gateway 使用，请同时勾选 Gateway 卸载。");
+            }
+
+            if (options.RemoveNode && ((state.OpenClawInstalledByManager && !options.RemoveOpenClaw)
+                || (state.GatewayInstalledByManager && !options.RemoveGateway)))
+            {
+                return Failure("Node.js 仍被已安装的 OpenClaw/Gateway 使用，请先同时勾选相关资源卸载。");
+            }
+
             if (options.RemoveGateway && state.GatewayInstalledByManager)
             {
                 Report(progress, InstallStep.StartingGateway, 15, "正在停止 Gateway");
@@ -93,19 +104,22 @@ public sealed class UninstallService : IUninstallService
             }
 
             RemoveOwnedShortcuts(state.OwnedShortcuts);
-            if (options.RemoveManagerData && Directory.Exists(_paths.ManagerRoot))
-            {
-                Directory.Delete(_paths.ManagerRoot, recursive: true);
-            }
-
-            await _stateStore.SaveAsync(state with
+            var updatedState = state with
             {
                 NodeInstalledByManager = options.RemoveNode ? false : state.NodeInstalledByManager,
                 OpenClawInstalledByManager = options.RemoveOpenClaw ? false : state.OpenClawInstalledByManager,
                 GatewayInstalledByManager = options.RemoveGateway ? false : state.GatewayInstalledByManager,
                 OwnedShortcuts = Array.Empty<string>(),
                 CurrentStep = InstallStep.Completed
-            }, cancellationToken);
+            };
+            if (options.RemoveManagerData && Directory.Exists(_paths.ManagerRoot))
+            {
+                Directory.Delete(_paths.ManagerRoot, recursive: true);
+            }
+            else
+            {
+                await _stateStore.SaveAsync(updatedState, cancellationToken);
+            }
             Report(progress, InstallStep.Completed, 100, "卸载操作完成");
             return new UninstallResult(true, "已按选择完成卸载；未勾选的资源已保留。");
         }
@@ -177,11 +191,11 @@ public sealed class UninstallService : IUninstallService
         }
     }
 
-    private static string BuildPreviewSummary(InstallState state)
+    private string BuildPreviewSummary(InstallState state)
         => $"Gateway: {(state.GatewayInstalledByManager ? "将可卸载" : "未由管理器安装")}; "
            + $"OpenClaw: {(state.OpenClawInstalledByManager ? "将可卸载" : "未由管理器安装")}; "
            + $"Node.js: {(state.NodeInstalledByManager ? "可选择卸载" : "保留")}; "
-           + $"配置: {(Directory.Exists(Environment.ExpandEnvironmentVariables("%USERPROFILE%\\.openclaw")) ? "存在，默认保留" : "不存在")}";
+           + $"配置: {(Directory.Exists(_paths.OpenClawHome) ? "存在，默认保留" : "不存在")}";
 
     private static bool IsAlreadyStopped(string error)
         => error.Contains("not running", StringComparison.OrdinalIgnoreCase)

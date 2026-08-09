@@ -60,6 +60,15 @@ public sealed class InstallCoordinator : IInstallCoordinator
             }
 
             Report(progress, InstallStep.InstallingNode, 15, "正在准备 Node.js");
+            if (environment.GatewayPortInUse)
+            {
+                var existingGateway = await _gateway.GetStatusAsync(cancellationToken);
+                if (!existingGateway.IsHealthy)
+                {
+                    return Fail(progress, InstallStep.Detecting, $"Gateway 默认端口 {environment.GatewayPort} 已被其他进程占用。");
+                }
+            }
+
             var node = await _node.EnsureCompatibleAsync(
                 new NodeInstallOptions(options.InstallNodeIfMissing),
                 progress,

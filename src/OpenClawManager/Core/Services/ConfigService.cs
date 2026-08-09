@@ -30,7 +30,7 @@ public sealed class ConfigService : IConfigService
         _paths.EnsureDataDirectories();
         var backupPath = Path.Combine(
             _paths.BackupsDirectory,
-            DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss"));
+            DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff") + "-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(backupPath);
 
         var fileCount = 0;

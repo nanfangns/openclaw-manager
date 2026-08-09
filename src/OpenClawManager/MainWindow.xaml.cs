@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private readonly Brush _successBrush;
     private readonly Brush _warningBrush;
     private readonly Brush _dangerBrush;
+    private CancellationTokenSource? _operationCancellation;
 
     public MainWindow(IEnvironmentService environment, IConfigService config, IGatewayService gateway, IInstallCoordinator coordinator, IUninstallService uninstall, LogService logs)
     {
@@ -101,6 +102,7 @@ public partial class MainWindow : Window
             : null;
         var options = new InstallOptions(model, InstallNodeCheckBox.IsChecked == true, InstallGatewayCheckBox.IsChecked == true);
         SetOperationRunning(true);
+        _operationCancellation = new CancellationTokenSource();
         try
         {
             var progress = new Progress<InstallProgress>(item =>
@@ -109,7 +111,7 @@ public partial class MainWindow : Window
                 InstallProgressText.Text = item.Message;
                 InstallProgressText.Foreground = item.IsError ? _dangerBrush : _warningBrush;
             });
-            var result = await _coordinator.RunAsync(options, progress, CancellationToken.None);
+            var result = await _coordinator.RunAsync(options, progress, _operationCancellation.Token);
             InstallProgressText.Text = result.Summary;
             InstallProgressText.Foreground = result.Succeeded ? _successBrush : _dangerBrush;
             await RefreshAllAsync();
@@ -122,9 +124,13 @@ public partial class MainWindow : Window
         }
         finally
         {
+            _operationCancellation.Dispose();
+            _operationCancellation = null;
             SetOperationRunning(false);
         }
     }
+
+    private void CancelInstall_Click(object sender, RoutedEventArgs e) => _operationCancellation?.Cancel();
 
     private async void Repair_Click(object sender, RoutedEventArgs e)
     {
@@ -271,6 +277,7 @@ public partial class MainWindow : Window
     private void SetOperationRunning(bool running)
     {
         InstallButton.IsEnabled = !running;
+        CancelInstallButton.IsEnabled = running;
         Cursor = running ? System.Windows.Input.Cursors.Wait : System.Windows.Input.Cursors.Arrow;
     }
 

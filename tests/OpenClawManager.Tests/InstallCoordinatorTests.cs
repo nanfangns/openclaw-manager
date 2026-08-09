@@ -37,6 +37,21 @@ public sealed class InstallCoordinatorTests
         Assert.Equal(InstallStep.StartingGateway, result.FailedStep);
     }
 
+    [Fact]
+    public async Task Stops_before_install_when_gateway_port_is_owned_by_another_process()
+    {
+        var fakes = FakeSet.Success();
+        fakes.Environment.PortInUse = true;
+        fakes.Gateway.Healthy = false;
+        var coordinator = fakes.CreateCoordinator();
+
+        var result = await coordinator.RunAsync(new InstallOptions(), new Progress<InstallProgress>(), CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(InstallStep.Detecting, result.FailedStep);
+        Assert.False(fakes.Node.Called);
+    }
+
     private sealed class FakeSet
     {
         public FakeSet()
@@ -74,17 +89,22 @@ public sealed class InstallCoordinatorTests
 
     private sealed class FakeEnvironment : IEnvironmentService
     {
+        public bool PortInUse { get; set; }
         public Task<EnvironmentSnapshot> DetectAsync(CancellationToken cancellationToken)
             => Task.FromResult(new EnvironmentSnapshot(
                 "Windows 10", "X64", true, true, true, 10,
                 "node", "v24.15.0", "npm", "11", "openclaw", "2026.7.1",
-                false, 18789, null));
+                PortInUse, 18789, null));
     }
 
     private sealed class FakeNode : INodeService
     {
+        public bool Called { get; private set; }
         public Task<NodeResult> EnsureCompatibleAsync(NodeInstallOptions options, IProgress<InstallProgress> progress, CancellationToken cancellationToken)
-            => Task.FromResult(new NodeResult(true, "v24.15.0", "node", false, "ok"));
+        {
+            Called = true;
+            return Task.FromResult(new NodeResult(true, "v24.15.0", "node", false, "ok"));
+        }
     }
 
     private sealed class FakeOpenClaw : IOpenClawCliService
@@ -116,9 +136,10 @@ public sealed class InstallCoordinatorTests
     private sealed class FakeGateway : IGatewayService
     {
         public bool Started { get; private set; }
+        public bool Healthy { get; set; } = true;
         public CommandResult StartResult { get; set; } = new(0, string.Empty, string.Empty, TimeSpan.Zero, false, false);
         public Task<GatewayStatus> GetStatusAsync(CancellationToken cancellationToken)
-            => Task.FromResult(new GatewayStatus(true, Started, Started, 18789, Started ? "running" : "stopped"));
+            => Task.FromResult(new GatewayStatus(true, Started, Healthy && Started, 18789, Started ? "running" : "stopped"));
         public Task<CommandResult> InstallAsync(CancellationToken cancellationToken)
             => Task.FromResult(new CommandResult(0, string.Empty, string.Empty, TimeSpan.Zero, false, false));
         public Task<CommandResult> StartAsync(CancellationToken cancellationToken)
