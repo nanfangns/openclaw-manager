@@ -1,5 +1,5 @@
 #define MyAppName "OpenClaw Manager"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.1.1"
 #define MyAppPublisher "nanfangns"
 #define MyAppExeName "OpenClawManager.exe"
 #define PublishDir AddBackslash(SourcePath) + "publish"
@@ -17,6 +17,7 @@ OutputBaseFilename=OpenClawManagerSetup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=..\src\OpenClawManager\Assets\OpenClawManager.ico
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin

@@ -5,6 +5,10 @@
 
 一个面向 Windows 10/11 x64 的 OpenClaw 图形化安装器和本机管理后台。
 
+<p align="center">
+  <img src="src/OpenClawManager/Assets/OpenClawManagerLogo.png" alt="OpenClaw Manager logo" width="180">
+</p>
+
 它负责安装运行环境、配置模型、管理 Gateway、查看日志、备份恢复配置和安全卸载。它不是聊天客户端，也不依赖 BAT 或 PowerShell 作为运行时界面。
 
 ## 功能

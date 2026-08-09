@@ -8,6 +8,11 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>OpenClawManager</AssemblyName>
     <RootNamespace>OpenClawManager</RootNamespace>
+    <ApplicationIcon>Assets\OpenClawManager.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\OpenClawManagerLogo.png" />
+  </ItemGroup>
 
 </Project>
