@@ -20,6 +20,7 @@ backups/
 .worktrees/
 
 # Local tooling and OS files
+.dotnet-home/
 .vs/
 .idea/
 Thumbs.db

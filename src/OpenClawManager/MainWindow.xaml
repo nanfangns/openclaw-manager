@@ -20,7 +20,7 @@
                     <Button Style="{StaticResource NavButtonStyle}" Click="Logs_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE9F9;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="运行日志" /></StackPanel></Button>
                     <Button Style="{StaticResource NavButtonStyle}" Click="Uninstall_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="安全卸载" /></StackPanel></Button>
                 </StackPanel>
-                <StackPanel Grid.Row="2" Margin="24,0,20,22"><TextBlock Text="v0.1.1" Foreground="{StaticResource MutedTextBrush}" FontSize="11" /><TextBlock Text="Windows 10 / 11 x64" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" /></StackPanel>
+                <StackPanel Grid.Row="2" Margin="24,0,20,22"><TextBlock Text="v0.1.2" Foreground="{StaticResource MutedTextBrush}" FontSize="11" /><TextBlock Text="Windows 10 / 11 x64" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" /></StackPanel>
             </Grid>
         </Border>
 
