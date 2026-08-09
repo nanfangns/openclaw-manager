@@ -43,7 +43,7 @@ packaging/output/OpenClawManagerSetup.exe
 
 安装程序会创建 Start Menu 快捷方式，并可选创建桌面快捷方式。安装完成后，从 **OpenClaw Manager** 进入管理界面。
 
-> 当前仓库暂未发布 GitHub Release。安装包是本机生成的交付物，位于 `packaging/output/`，该目录被 `.gitignore` 排除，不会提交到 Git 历史。
+> 当前版本也已发布到 [GitHub Releases](https://github.com/nanfangns/openclaw-manager/releases/latest)。本地安装包位于 `packaging/output/`，该目录被 `.gitignore` 排除，不会提交到 Git 历史。
 
 ### 首次安装流程
 
