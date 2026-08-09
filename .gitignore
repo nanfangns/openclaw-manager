@@ -1,0 +1,25 @@
+# .NET build output
+**/bin/
+**/obj/
+publish/
+packaging/publish/
+packaging/output/
+
+# Local application state and secrets
+*.user
+*.suo
+*.log
+*.tmp
+*.bak
+state.json
+runtime.json
+backups/
+
+# Visual brainstorming session files
+.superpowers/brainstorm/
+
+# Local tooling and OS files
+.vs/
+.idea/
+Thumbs.db
+desktop.ini
