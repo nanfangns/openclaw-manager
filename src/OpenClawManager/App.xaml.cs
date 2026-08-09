@@ -9,6 +9,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        EnsureWindowsDirectoryEnvironment();
 
         var paths = new PathLayout();
         var runner = new ProcessRunner();
@@ -26,5 +27,18 @@ public partial class App : Application
 
         MainWindow = new MainWindow(environment, config, gateway, coordinator, uninstall, logs);
         MainWindow.Show();
+    }
+
+    private static void EnsureWindowsDirectoryEnvironment()
+    {
+        // WPF's font initialization reads windir; recover it from SystemRoot without changing user settings.
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("windir")))
+        {
+            var systemRoot = Environment.GetEnvironmentVariable("SystemRoot");
+            if (!string.IsNullOrWhiteSpace(systemRoot))
+            {
+                Environment.SetEnvironmentVariable("windir", systemRoot, EnvironmentVariableTarget.Process);
+            }
+        }
     }
 }
