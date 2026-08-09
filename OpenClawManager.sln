@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{BCF01612-69A7-4C4A-9FCA-6B5D152F4B2D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenClawManager.Tests", "tests\OpenClawManager.Tests\OpenClawManager.Tests.csproj", "{B7CAF0AA-E01F-404C-B74E-553D937B13C5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4A79FD61-D3D4-4CBE-BB40-6F0695B9012C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenClawManager", "src\OpenClawManager\OpenClawManager.csproj", "{1ADF268B-19CB-4283-A36A-704FC1DB82F3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B7CAF0AA-E01F-404C-B74E-553D937B13C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7CAF0AA-E01F-404C-B74E-553D937B13C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7CAF0AA-E01F-404C-B74E-553D937B13C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7CAF0AA-E01F-404C-B74E-553D937B13C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1ADF268B-19CB-4283-A36A-704FC1DB82F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1ADF268B-19CB-4283-A36A-704FC1DB82F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1ADF268B-19CB-4283-A36A-704FC1DB82F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1ADF268B-19CB-4283-A36A-704FC1DB82F3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B7CAF0AA-E01F-404C-B74E-553D937B13C5} = {BCF01612-69A7-4C4A-9FCA-6B5D152F4B2D}
+		{1ADF268B-19CB-4283-A36A-704FC1DB82F3} = {4A79FD61-D3D4-4CBE-BB40-6F0695B9012C}
+	EndGlobalSection
+EndGlobal
