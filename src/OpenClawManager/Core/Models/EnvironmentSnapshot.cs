@@ -1,3 +1,5 @@
+using OpenClawManager.Infrastructure;
+
 namespace OpenClawManager.Core.Models;
 
 public sealed record EnvironmentSnapshot(
@@ -17,6 +19,5 @@ public sealed record EnvironmentSnapshot(
     int GatewayPort,
     string? GatewayPortOwner)
 {
-    public bool HasCompatibleNode => Version.TryParse(NodeVersion?.TrimStart('v'), out var version)
-        && version.Major >= 22;
+    public bool HasCompatibleNode => VersionPolicy.IsNodeSupported(NodeVersion);
 }

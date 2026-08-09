@@ -17,4 +17,22 @@ public static class CommandCatalog
 
     public static IReadOnlyList<string> OpenClawModelsList()
         => new[] { "models", "list" };
+
+    public static IReadOnlyList<string> OpenClawGatewayInstall()
+        => new[] { "gateway", "install" };
+
+    public static IReadOnlyList<string> OpenClawGatewayStart()
+        => new[] { "gateway", "start" };
+
+    public static IReadOnlyList<string> OpenClawGatewayStop()
+        => new[] { "gateway", "stop" };
+
+    public static IReadOnlyList<string> OpenClawGatewayRestart()
+        => new[] { "gateway", "restart" };
+
+    public static IReadOnlyList<string> OpenClawGatewayUninstall()
+        => new[] { "gateway", "uninstall" };
+
+    public static IReadOnlyList<string> OpenClawGatewayStatusJson()
+        => new[] { "gateway", "status", "--json" };
 }
