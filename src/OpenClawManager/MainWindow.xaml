@@ -20,7 +20,7 @@
                     <Button Style="{StaticResource NavButtonStyle}" Click="Logs_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE9F9;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="运行日志" /></StackPanel></Button>
                     <Button Style="{StaticResource NavButtonStyle}" Click="Uninstall_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="安全卸载" /></StackPanel></Button>
                 </StackPanel>
-                <StackPanel Grid.Row="2" Margin="24,0,20,22"><TextBlock Text="v0.1.2" Foreground="{StaticResource MutedTextBrush}" FontSize="11" /><TextBlock Text="Windows 10 / 11 x64" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" /></StackPanel>
+                <StackPanel Grid.Row="2" Margin="24,0,20,22"><TextBlock Text="v0.1.3" Foreground="{StaticResource MutedTextBrush}" FontSize="11" /><TextBlock Text="Windows 10 / 11 x64" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" /></StackPanel>
             </Grid>
         </Border>
 
@@ -47,8 +47,39 @@
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                 <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,18"><StackPanel><TextBlock Text="安装向导" FontSize="20" FontWeight="SemiBold" /><TextBlock Text="在线下载并校验 Node.js，然后安装 OpenClaw CLI 和 Gateway。" Foreground="{StaticResource MutedTextBrush}" Margin="0,7,0,0" /><ProgressBar x:Name="InstallProgressBar" Height="7" Margin="0,20,0,8" Minimum="0" Maximum="100" Value="0" /><TextBlock x:Name="InstallProgressText" Text="准备就绪" Foreground="{StaticResource MutedTextBrush}" FontSize="12" /></StackPanel></Border>
                 <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                    <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,9,0"><StackPanel><TextBlock Text="安装选项" FontSize="16" FontWeight="SemiBold" /><CheckBox x:Name="InstallNodeCheckBox" IsChecked="True" Content="Node.js 不兼容时自动安装" Margin="0,22,0,0" /><CheckBox x:Name="InstallGatewayCheckBox" IsChecked="True" Content="安装并启动 Gateway 服务" /><CheckBox x:Name="ConfigureModelCheckBox" IsChecked="False" Content="同时配置模型 API" /><TextBlock Text="安装会使用管理员权限安装 MSI；网络断开或 UAC 取消时会明确报告失败。" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Margin="0,22,0,0" /></StackPanel></Border>
-                    <Border Grid.Column="1" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="9,0,0,0"><StackPanel><TextBlock Text="模型配置（可选）" FontSize="16" FontWeight="SemiBold" /><TextBlock Text="服务商" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Margin="0,18,0,5" /><ComboBox x:Name="ProviderCombo" DisplayMemberPath="DisplayName" SelectionChanged="Provider_SelectionChanged" /><TextBlock Text="模型 ID" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Margin="0,14,0,5" /><TextBox x:Name="ModelIdBox" /><TextBlock Text="API Key" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Margin="0,14,0,5" /><PasswordBox x:Name="ApiKeyBox" /><TextBlock x:Name="BaseUrlLabel" Text="Base URL（自定义服务商）" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Margin="0,14,0,5" Visibility="Collapsed" /><TextBox x:Name="BaseUrlBox" Visibility="Collapsed" /><WrapPanel Margin="0,22,0,0"><Button x:Name="InstallButton" Style="{StaticResource PrimaryButtonStyle}" Content="安装 OpenClaw" Click="RunInstall_Click" /><Button x:Name="CancelInstallButton" Style="{StaticResource SecondaryButtonStyle}" Content="取消" Click="CancelInstall_Click" IsEnabled="False" Margin="10,0,0,0" /></WrapPanel></StackPanel></Border>
+                    <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,9,0">
+                        <StackPanel>
+                            <TextBlock Text="安装选项" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="先选择安装范围，再开始安装。已有兼容环境会自动复用。" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,8,0,16" />
+                            <CheckBox x:Name="InstallNodeCheckBox" IsChecked="True" Content="Node.js 不兼容时自动安装" />
+                            <CheckBox x:Name="InstallGatewayCheckBox" IsChecked="True" Content="安装并启动 Gateway" />
+                            <CheckBox x:Name="ConfigureModelCheckBox" IsChecked="False" Content="同时配置模型 API" Checked="ConfigureModelCheckBox_Changed" Unchecked="ConfigureModelCheckBox_Changed" />
+                            <Border Background="#202A3A" CornerRadius="7" Padding="12" Margin="0,16,0,0">
+                                <TextBlock Text="安装 Node.js 可能会弹出 UAC 授权。网络中断或取消授权时，软件会保留失败原因，不会静默继续。" TextWrapping="Wrap" Foreground="#C8D5EC" FontSize="12" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="9,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="模型配置" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock x:Name="ModelConfigurationHintText" Text="先勾选左侧“同时配置模型 API”，这里的内容才会在安装时写入 OpenClaw。" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,8,0,16" />
+                            <StackPanel x:Name="ModelConfigurationPanel" IsEnabled="False">
+                                <TextBlock Text="服务商" Foreground="{StaticResource TextBrush}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                <ComboBox x:Name="ProviderCombo" SelectionChanged="Provider_SelectionChanged" ToolTip="选择 OpenClaw 使用的模型服务商">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate><TextBlock Text="{Binding DisplayName}" /></DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Text="模型 ID" Foreground="{StaticResource TextBrush}" FontSize="12" FontWeight="SemiBold" Margin="0,16,0,6" />
+                                <TextBox x:Name="ModelIdBox" ToolTip="例如：gpt-4.1-mini；留空则使用服务商默认值" />
+                                <TextBlock Text="API Key" Foreground="{StaticResource TextBrush}" FontSize="12" FontWeight="SemiBold" Margin="0,16,0,6" />
+                                <PasswordBox x:Name="ApiKeyBox" ToolTip="只用于本次配置，不会写入运行日志" />
+                                <TextBlock x:Name="BaseUrlLabel" Text="Base URL（自定义服务商）" Foreground="{StaticResource TextBrush}" FontSize="12" FontWeight="SemiBold" Margin="0,16,0,6" Visibility="Collapsed" />
+                                <TextBox x:Name="BaseUrlBox" ToolTip="例如：https://api.example.com/v1" Visibility="Collapsed" />
+                            </StackPanel>
+                            <WrapPanel Margin="0,22,0,0"><Button x:Name="InstallButton" Style="{StaticResource PrimaryButtonStyle}" Content="安装 OpenClaw" Click="RunInstall_Click" /><Button x:Name="CancelInstallButton" Style="{StaticResource SecondaryButtonStyle}" Content="取消安装" Click="CancelInstall_Click" IsEnabled="False" Margin="10,0,0,0" /></WrapPanel>
+                        </StackPanel>
+                    </Border>
                 </Grid>
             </Grid>
 

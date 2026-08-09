@@ -36,6 +36,7 @@ public partial class MainWindow : Window
         _dangerBrush = (Brush)FindResource("DangerBrush");
         ProviderCombo.ItemsSource = ModelProviderCatalog.All;
         ProviderCombo.SelectedIndex = 0;
+        ConfigureModelCheckBox_Changed(this, new RoutedEventArgs());
         _logs.EntryAdded += Logs_EntryAdded;
         Loaded += async (_, _) => await RefreshAllAsync();
     }
@@ -247,6 +248,15 @@ public partial class MainWindow : Window
         var showBaseUrl = (ProviderCombo.SelectedItem as ModelProvider)?.RequiresBaseUrl == true;
         BaseUrlLabel.Visibility = showBaseUrl ? Visibility.Visible : Visibility.Collapsed;
         BaseUrlBox.Visibility = showBaseUrl ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void ConfigureModelCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        var enabled = ConfigureModelCheckBox.IsChecked == true;
+        ModelConfigurationPanel.IsEnabled = enabled;
+        ModelConfigurationHintText.Text = enabled
+            ? "模型配置已启用，安装时会写入 OpenClaw。API Key 只会通过安全输入传递。"
+            : "先勾选左侧“同时配置模型 API”，这里的内容才会在安装时写入 OpenClaw。";
     }
 
     private void OpenConfig_Click(object sender, RoutedEventArgs e)

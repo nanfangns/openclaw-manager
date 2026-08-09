@@ -17,7 +17,7 @@ OpenClaw Manager 的目标是把 OpenClaw 的安装、运行环境准备和日�
 
 本项目是 **OpenClaw 的安装与管理工具**，不是 OpenClaw 本体，也不是聊天客户端。OpenClaw 项目本身请前往[官方仓库](https://github.com/openclaw/openclaw)了解。
 
-> 当前版本：`v0.1.2`。项目处于早期预览阶段，核心安装和管理流程已落地，界面和兼容性仍会持续完善。
+> 当前版本：`v0.1.3`。项目处于早期预览阶段，核心安装和管理流程已落地，界面和兼容性仍会持续完善。
 
 ## 为什么需要它
 
@@ -51,8 +51,8 @@ OpenClaw Manager 的目标是把 OpenClaw 的安装、运行环境准备和日�
 
 当前版本：
 
-- [下载 OpenClaw Manager v0.1.2](https://github.com/nanfangns/openclaw-manager/releases/tag/v0.1.2)
-- [直接下载安装包](https://github.com/nanfangns/openclaw-manager/releases/download/v0.1.2/OpenClawManagerSetup.exe)
+- [下载 OpenClaw Manager v0.1.3](https://github.com/nanfangns/openclaw-manager/releases/tag/v0.1.3)
+- [直接下载安装包](https://github.com/nanfangns/openclaw-manager/releases/download/v0.1.3/OpenClawManagerSetup.exe)
 
 安装程序会：
 
@@ -88,10 +88,10 @@ Node.js MSI 安装需要管理员权限。网络中断、UAC 取消、端口被�
 Get-FileHash .\OpenClawManagerSetup.exe -Algorithm SHA256
 ```
 
-`v0.1.2` 安装包 SHA-256：
+`v0.1.3` 安装包 SHA-256：
 
 ```text
-160d1cc32f7e6badb00507b3a6f3e3cd79cc63aa2587e04e9b103c0aec23183e
+44efe3409189687d82f8bfa0c87c90953df8d3d8e6c7aa388dcd5198ff4915e8
 ```
 
 ## 系统要求
