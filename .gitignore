@@ -17,6 +17,7 @@ backups/
 
 # Visual brainstorming session files
 .superpowers/brainstorm/
+.worktrees/
 
 # Local tooling and OS files
 .vs/
