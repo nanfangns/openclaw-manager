@@ -15,18 +15,20 @@ public partial class MainWindow : Window
     private readonly IConfigService _config;
     private readonly IGatewayService _gateway;
     private readonly IInstallCoordinator _coordinator;
+    private readonly IUninstallService _uninstall;
     private readonly LogService _logs;
     private readonly Brush _successBrush;
     private readonly Brush _warningBrush;
     private readonly Brush _dangerBrush;
 
-    public MainWindow(IEnvironmentService environment, IConfigService config, IGatewayService gateway, IInstallCoordinator coordinator, LogService logs)
+    public MainWindow(IEnvironmentService environment, IConfigService config, IGatewayService gateway, IInstallCoordinator coordinator, IUninstallService uninstall, LogService logs)
     {
         InitializeComponent();
         _environment = environment;
         _config = config;
         _gateway = gateway;
         _coordinator = coordinator;
+        _uninstall = uninstall;
         _logs = logs;
         _successBrush = (Brush)FindResource("SuccessBrush");
         _warningBrush = (Brush)FindResource("WarningBrush");
@@ -42,6 +44,7 @@ public partial class MainWindow : Window
     private async void Gateway_Click(object sender, RoutedEventArgs e) { ShowPage(GatewayPage, "Gateway", "管理本机 Gateway 服务生命周期"); await RefreshGatewayAsync(); }
     private async void Model_Click(object sender, RoutedEventArgs e) { ShowPage(ModelPage, "模型与备份", "配置模型凭据并安全管理 OpenClaw 配置备份"); await RefreshBackupsAsync(); }
     private void Logs_Click(object sender, RoutedEventArgs e) => ShowPage(LogsPage, "运行日志", "查看操作记录（敏感值已脱敏）");
+    private async void Uninstall_Click(object sender, RoutedEventArgs e) { ShowPage(UninstallPage, "安全卸载", "按资源归属和明确选择清理 OpenClaw"); await PreviewUninstallAsync(); }
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAllAsync();
 
     private async Task RefreshAllAsync()
@@ -188,6 +191,51 @@ public partial class MainWindow : Window
         BackupStatusText.Text = backups.Count == 0 ? "尚无备份" : $"共 {backups.Count} 个备份";
     }
 
+    private async void PreviewUninstall_Click(object sender, RoutedEventArgs e) => await PreviewUninstallAsync();
+
+    private async Task PreviewUninstallAsync()
+    {
+        try
+        {
+            var preview = await _uninstall.PreviewAsync(CancellationToken.None);
+            UninstallPreviewText.Text = preview.Summary;
+        }
+        catch (Exception ex)
+        {
+            UninstallPreviewText.Text = $"预览失败：{ex.Message}";
+        }
+    }
+
+    private async void RunUninstall_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show("将按当前勾选项执行清理，未勾选资源会保留。继续？", "确认安全卸载", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+        var options = new UninstallOptions(
+            RemoveOpenClawCheckBox.IsChecked == true,
+            RemoveNodeCheckBox.IsChecked == true,
+            RemoveConfigCheckBox.IsChecked == true,
+            RemoveWorkspaceCheckBox.IsChecked == true,
+            RemoveGatewayCheckBox.IsChecked == true,
+            RemoveManagerDataCheckBox.IsChecked == true);
+        try
+        {
+            SetOperationRunning(true);
+            var progress = new Progress<InstallProgress>(item => UninstallStatusText.Text = item.Message);
+            var result = await _uninstall.ExecuteAsync(options, progress, CancellationToken.None);
+            UninstallStatusText.Text = result.Summary;
+            UninstallStatusText.Foreground = result.Succeeded ? _successBrush : _dangerBrush;
+            await PreviewUninstallAsync();
+        }
+        catch (Exception ex)
+        {
+            UninstallStatusText.Text = $"卸载失败：{ex.Message}";
+            UninstallStatusText.Foreground = _dangerBrush;
+        }
+        finally
+        {
+            SetOperationRunning(false);
+        }
+    }
+
     private void Provider_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var showBaseUrl = (ProviderCombo.SelectedItem as ModelProvider)?.RequiresBaseUrl == true;
@@ -214,6 +262,7 @@ public partial class MainWindow : Window
         GatewayPage.Visibility = Visibility.Collapsed;
         ModelPage.Visibility = Visibility.Collapsed;
         LogsPage.Visibility = Visibility.Collapsed;
+        UninstallPage.Visibility = Visibility.Collapsed;
         page.Visibility = Visibility.Visible;
         PageTitleText.Text = title;
         PageSubtitleText.Text = subtitle;

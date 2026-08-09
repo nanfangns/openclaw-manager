@@ -20,6 +20,12 @@ public sealed class PathLayout
     public string StateFile => Path.Combine(ManagerRoot, "state.json");
     public string OpenClawHome => Path.Combine(UserProfile, ".openclaw");
     public string OpenClawConfigFile => Path.Combine(OpenClawHome, "openclaw.json");
+    public string DesktopShortcutPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+        "OpenClaw Manager.lnk");
+    public string StartMenuShortcutPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+        "OpenClaw Manager.lnk");
 
     public void EnsureDataDirectories()
     {

@@ -5,7 +5,8 @@ public sealed record UninstallOptions(
     bool RemoveNode,
     bool RemoveConfig,
     bool RemoveWorkspace,
-    bool RemoveGateway);
+    bool RemoveGateway,
+    bool RemoveManagerData = false);
 
 public sealed record UninstallPreview(
     bool GatewayInstalled,

@@ -9,6 +9,9 @@ public static class CommandCatalog
     public static IReadOnlyList<string> NpmInstallGlobal(string packageSpec)
         => new[] { "install", "--global", packageSpec };
 
+    public static IReadOnlyList<string> NpmUninstallGlobal(string packageSpec)
+        => new[] { "uninstall", "--global", packageSpec };
+
     public static IReadOnlyList<string> OpenClawVersion()
         => new[] { "--version" };
 

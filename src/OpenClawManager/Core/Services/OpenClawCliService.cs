@@ -59,6 +59,13 @@ public sealed class OpenClawCliService : IOpenClawCliService
         return result;
     }
 
+    public Task<CommandResult> UninstallAsync(CancellationToken cancellationToken)
+        => _runner.RunAsync(
+            CommandCatalog.Npm,
+            CommandCatalog.NpmUninstallGlobal("openclaw"),
+            new ProcessRunOptions(TimeSpan.FromMinutes(5)),
+            cancellationToken);
+
     public Task<CommandResult> ValidateConfigAsync(CancellationToken cancellationToken)
         => _runner.RunAsync(
             CommandCatalog.OpenClaw,

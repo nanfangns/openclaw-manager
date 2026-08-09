@@ -93,6 +93,8 @@ public sealed class InstallCoordinatorTests
             => Task.FromResult(new OpenClawVersionResult(true, "2026.7.1", "openclaw", "ok"));
         public Task<CommandResult> InstallAsync(string packageSpec, CancellationToken cancellationToken)
             => Task.FromResult(new CommandResult(0, string.Empty, string.Empty, TimeSpan.Zero, false, false));
+        public Task<CommandResult> UninstallAsync(CancellationToken cancellationToken)
+            => Task.FromResult(new CommandResult(0, string.Empty, string.Empty, TimeSpan.Zero, false, false));
         public Task<CommandResult> ValidateConfigAsync(CancellationToken cancellationToken)
             => Task.FromResult(new CommandResult(0, string.Empty, string.Empty, TimeSpan.Zero, false, false));
         public Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken cancellationToken)

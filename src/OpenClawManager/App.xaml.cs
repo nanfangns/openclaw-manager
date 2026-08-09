@@ -22,8 +22,9 @@ public partial class App : Application
         var config = new ConfigService(paths, runner, credentials, logs);
         var gateway = new GatewayService(runner);
         var coordinator = new InstallCoordinator(environment, node, openClaw, config, gateway, stateStore, logs);
+        var uninstall = new UninstallService(paths, stateStore, openClaw, gateway, config, elevation, logs);
 
-        MainWindow = new MainWindow(environment, config, gateway, coordinator, logs);
+        MainWindow = new MainWindow(environment, config, gateway, coordinator, uninstall, logs);
         MainWindow.Show();
     }
 }
