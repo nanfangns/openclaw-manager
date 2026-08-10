@@ -9,4 +9,7 @@ public interface IOpenClawCliService
     Task<CommandResult> UninstallAsync(CancellationToken cancellationToken);
     Task<CommandResult> ValidateConfigAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken cancellationToken);
+    Task<ModelProbeResult> ProbeModelAsync(
+        ModelConfiguration? configuration,
+        CancellationToken cancellationToken);
 }

@@ -9,7 +9,7 @@ namespace OpenClawManager.Core.Services;
 public sealed class LogService : ILogService
 {
     private static readonly Regex SecretPattern = new(
-        @"(?i)(api[_-]?key|token|secret|password|authorization)(\s*[:=]\s*)([^\s,;]+)",
+        @"(?i)([""']?(?:api[_-]?key|token|secret|password|authorization)[""']?\s*[:=]\s*[""']?)([^""'\s,;}\]]+)",
         RegexOptions.Compiled);
 
     private readonly PathLayout _paths;
@@ -47,6 +47,6 @@ public sealed class LogService : ILogService
             return text;
         }
 
-        return SecretPattern.Replace(text, "$1$2[REDACTED]");
+        return SecretPattern.Replace(text, "$1[REDACTED]");
     }
 }

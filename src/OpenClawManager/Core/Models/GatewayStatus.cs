@@ -6,4 +6,7 @@ public sealed record GatewayStatus(
     bool IsHealthy,
     int Port,
     string Summary,
-    string? Detail = null);
+    string? Detail = null,
+    string Host = "127.0.0.1",
+    bool? ConnectivityProbeSucceeded = null,
+    int? ProcessId = null);

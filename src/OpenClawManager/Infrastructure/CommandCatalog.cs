@@ -21,6 +21,9 @@ public static class CommandCatalog
     public static IReadOnlyList<string> OpenClawModelsList()
         => new[] { "models", "list" };
 
+    public static IReadOnlyList<string> OpenClawModelsStatusJsonProbe()
+        => new[] { "models", "status", "--json", "--probe" };
+
     public static IReadOnlyList<string> OpenClawGatewayInstall()
         => new[] { "gateway", "install" };
 

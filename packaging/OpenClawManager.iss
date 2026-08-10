@@ -1,5 +1,5 @@
 #define MyAppName "OpenClaw Manager"
-#define MyAppVersion "0.1.3"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "nanfangns"
 #define MyAppExeName "OpenClawManager.exe"
 #define PublishDir AddBackslash(SourcePath) + "publish"

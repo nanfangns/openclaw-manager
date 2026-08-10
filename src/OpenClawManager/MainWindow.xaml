@@ -16,11 +16,12 @@
                     <Button Style="{StaticResource NavButtonStyle}" Click="Overview_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="概览" /></StackPanel></Button>
                     <Button Style="{StaticResource NavButtonStyle}" Click="Install_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="安装与配置" /></StackPanel></Button>
                     <Button Style="{StaticResource NavButtonStyle}" Click="Gateway_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE774;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="Gateway" /></StackPanel></Button>
+                    <Button Style="{StaticResource NavButtonStyle}" Click="Diagnostics_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="诊断中心" /></StackPanel></Button>
                     <Button Style="{StaticResource NavButtonStyle}" Click="Model_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="模型与备份" /></StackPanel></Button>
                     <Button Style="{StaticResource NavButtonStyle}" Click="Logs_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE9F9;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="运行日志" /></StackPanel></Button>
                     <Button Style="{StaticResource NavButtonStyle}" Click="Uninstall_Click"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="16" Width="28" /><TextBlock Text="安全卸载" /></StackPanel></Button>
                 </StackPanel>
-                <StackPanel Grid.Row="2" Margin="24,0,20,22"><TextBlock Text="v0.1.3" Foreground="{StaticResource MutedTextBrush}" FontSize="11" /><TextBlock Text="Windows 10 / 11 x64" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" /></StackPanel>
+                <StackPanel Grid.Row="2" Margin="24,0,20,22"><TextBlock Text="v0.2.0" Foreground="{StaticResource MutedTextBrush}" FontSize="11" /><TextBlock Text="Windows 10 / 11 x64" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" /></StackPanel>
             </Grid>
         </Border>
 
@@ -84,6 +85,32 @@
             </Grid>
 
             <Grid x:Name="GatewayPage" Visibility="Collapsed"><StackPanel><Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,18"><Grid><StackPanel><TextBlock Text="Gateway 服务" FontSize="20" FontWeight="SemiBold" /><TextBlock Text="管理本机服务生命周期，不默认开放局域网访问。" Foreground="{StaticResource MutedTextBrush}" Margin="0,7,0,0" /><TextBlock x:Name="GatewayDetailText" Text="正在读取状态" Margin="0,24,0,0" /></StackPanel><TextBlock x:Name="GatewayLargeStatusText" Text="未检测" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" /></Grid></Border><Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22"><StackPanel><TextBlock Text="服务操作" FontSize="16" FontWeight="SemiBold" /><WrapPanel Margin="0,20,0,0"><Button Style="{StaticResource PrimaryButtonStyle}" Content="启动" Click="StartGateway_Click" Margin="0,0,10,0" /><Button Style="{StaticResource SecondaryButtonStyle}" Content="停止" Click="StopGateway_Click" Margin="0,0,10,0" /><Button Style="{StaticResource SecondaryButtonStyle}" Content="重启" Click="RestartGateway_Click" Margin="0,0,10,0" /><Button Style="{StaticResource SecondaryButtonStyle}" Content="刷新" Click="Refresh_Click" /></WrapPanel></StackPanel></Border></StackPanel></Grid>
+
+            <Grid x:Name="DiagnosticsPage" Visibility="Collapsed">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,18">
+                    <StackPanel>
+                        <TextBlock Text="诊断中心" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock Text="重新检测环境、配置、Gateway 和模型服务。不会导出 API Key 或原始 .openclaw 配置。" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,7,0,0" />
+                        <WrapPanel Margin="0,20,0,0">
+                            <Button x:Name="RunDiagnosticsButton" Style="{StaticResource PrimaryButtonStyle}" Content="运行完整诊断" Click="RunDiagnostics_Click" Margin="0,0,10,0" />
+                            <Button x:Name="ExportDiagnosticsButton" Style="{StaticResource SecondaryButtonStyle}" Content="导出诊断包" Click="ExportDiagnostics_Click" IsEnabled="False" />
+                        </WrapPanel>
+                        <TextBlock x:Name="DiagnosticsSummaryText" Text="尚未运行诊断" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Margin="0,16,0,0" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Row="1" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14">
+                    <ListView x:Name="DiagnosticsList" Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextBrush}">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="检查项" DisplayMemberBinding="{Binding Name}" Width="150" />
+                                <GridViewColumn Header="结果" DisplayMemberBinding="{Binding StatusText}" Width="70" />
+                                <GridViewColumn Header="说明" DisplayMemberBinding="{Binding Summary}" Width="500" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Border>
+            </Grid>
 
             <Grid x:Name="ModelPage" Visibility="Collapsed"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions><Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,0,18"><StackPanel><TextBlock Text="配置备份" FontSize="20" FontWeight="SemiBold" /><TextBlock Text="备份包含 .openclaw 目录内容，恢复时保留备份清单文件。" Foreground="{StaticResource MutedTextBrush}" Margin="0,7,0,0" /><WrapPanel Margin="0,20,0,0"><Button Style="{StaticResource PrimaryButtonStyle}" Content="立即备份" Click="Backup_Click" Margin="0,0,10,0" /><Button Style="{StaticResource SecondaryButtonStyle}" Content="恢复选中备份" Click="Restore_Click" /></WrapPanel></StackPanel></Border><Border Grid.Row="1" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="22"><StackPanel><TextBlock Text="历史备份" FontSize="16" FontWeight="SemiBold" /><ComboBox x:Name="BackupCombo" DisplayMemberPath="Path" Margin="0,16,0,0" /><TextBlock x:Name="BackupStatusText" Text="尚无备份" Foreground="{StaticResource MutedTextBrush}" Margin="0,12,0,0" /></StackPanel></Border></Grid>
 

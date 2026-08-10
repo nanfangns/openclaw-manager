@@ -94,6 +94,7 @@ public sealed class UninstallServiceTests
         public Task<CommandResult> UninstallAsync(CancellationToken cancellationToken) { UninstallCalled = true; return Task.FromResult(Success()); }
         public Task<CommandResult> ValidateConfigAsync(CancellationToken cancellationToken) => Task.FromResult(Success());
         public Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
+        public Task<ModelProbeResult> ProbeModelAsync(ModelConfiguration? configuration, CancellationToken cancellationToken) => Task.FromResult(new ModelProbeResult(true, false, null, "skipped"));
     }
 
     private sealed class FakeGateway : IGatewayService

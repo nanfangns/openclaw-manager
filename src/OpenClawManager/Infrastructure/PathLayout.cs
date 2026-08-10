@@ -17,6 +17,7 @@ public sealed class PathLayout
     public string ManagerRoot => Path.Combine(LocalAppData, "OpenClawManager");
     public string LogsDirectory => Path.Combine(ManagerRoot, "logs");
     public string BackupsDirectory => Path.Combine(ManagerRoot, "backups");
+    public string DiagnosticsDirectory => Path.Combine(ManagerRoot, "diagnostics");
     public string StateFile => Path.Combine(ManagerRoot, "state.json");
     public string OpenClawHome => Path.Combine(UserProfile, ".openclaw");
     public string OpenClawConfigFile => Path.Combine(OpenClawHome, "openclaw.json");
@@ -32,5 +33,6 @@ public sealed class PathLayout
         Directory.CreateDirectory(ManagerRoot);
         Directory.CreateDirectory(LogsDirectory);
         Directory.CreateDirectory(BackupsDirectory);
+        Directory.CreateDirectory(DiagnosticsDirectory);
     }
 }

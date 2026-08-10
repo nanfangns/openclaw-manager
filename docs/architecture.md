@@ -23,7 +23,7 @@ src/OpenClawManager/
 ├─ App.xaml(.cs)                 # WPF 入口、依赖组装和全局样式
 ├─ MainWindow.xaml(.cs)          # 页面布局、导航和用户操作编排
 ├─ Core/Models/                  # 不可变状态、配置、进度和结果模型
-├─ Core/Services/                # 业务服务和外部命令适配器
+├─ Core/Services/                # 安装、验证、诊断和外部命令适配器
 └─ Infrastructure/               # 路径、进程、提权和版本策略
 
 tests/OpenClawManager.Tests/     # 服务层和策略层单元测试
@@ -38,6 +38,8 @@ WPF MainWindow
     │
     ├─ EnvironmentService ── 检测 Windows、Node.js、npm、OpenClaw 和端口
     ├─ InstallCoordinator ── 编排 Node.js、OpenClaw、Gateway 和模型配置
+    ├─ InstallationVerifier ── 安装后和手动触发的完整验证
+    ├─ DiagnosticsService ─── 收集脱敏状态并导出诊断包
     ├─ GatewayService ────── 执行 Gateway 生命周期操作
     ├─ ConfigService ─────── 备份、恢复和校验 .openclaw
     ├─ UninstallService ──── 按归属和用户勾选清理资源
@@ -53,6 +55,14 @@ WPF MainWindow
 ### 外部命令
 
 所有外部进程都通过 `ProcessRunner` 执行。命令参数使用参数集合传递，不拼接到未经处理的 shell 字符串中；服务层检查退出码、标准输出、标准错误和超时结果。
+
+安装 Node.js 或 npm 全局包后，`PathEnvironment` 会合并用户级、机器级和当前进程的 PATH，再重新检测 `node`、`npm` 和 `openclaw`，避免当前 GUI 进程继续使用安装前的旧 PATH。
+
+### 安装后验证和诊断
+
+`InstallationVerifier` 按环境、Node.js、npm、OpenClaw CLI、配置、Gateway 连接和模型服务逐项检查。Gateway 验证不只依赖启动命令退出码，还解析 `openclaw gateway status --json` 中的运行状态和连接探测结果；模型验证使用 `openclaw models status --json --probe`，仅在用户明确配置模型或手动运行诊断时执行。
+
+`DiagnosticsService` 不读取或打包 `.openclaw` 原始配置内容，只输出脱敏后的路径、版本、状态、检查摘要和最近日志。导出包为 `%LOCALAPPDATA%\OpenClawManager\diagnostics` 下的 ZIP 文件。
 
 ### 安装归属
 
@@ -83,5 +93,6 @@ packaging/output/                  # Inno Setup 安装包，不提交
 ## 验证策略
 
 - `dotnet test`：验证命令执行、版本策略、安装编排、配置备份恢复、状态存储和卸载归属。
+- 新增测试覆盖 PATH 合并、Gateway 嵌套 JSON/连接探测、模型探测失败识别、安装后验证和诊断包脱敏。
 - `dotnet format --verify-no-changes`：检查代码格式。
 - Windows 清洁环境测试：验证真实安装包、UAC、网络失败、端口冲突、Gateway 和卸载流程，详见 [`testing/clean-windows-smoke-test.md`](testing/clean-windows-smoke-test.md)。

@@ -5,3 +5,10 @@ public sealed record OpenClawVersionResult(
     string? Version,
     string? Path,
     string Summary);
+
+public sealed record ModelProbeResult(
+    bool Succeeded,
+    bool IsConfigured,
+    string? Model,
+    string Summary,
+    string? Detail = null);

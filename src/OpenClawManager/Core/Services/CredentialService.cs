@@ -6,7 +6,7 @@ namespace OpenClawManager.Core.Services;
 public sealed class CredentialService : ICredentialService
 {
     private static readonly Regex SecretPattern = new(
-        @"(?i)(api[_-]?key|token|secret|password|authorization)(\s*[:=]\s*)([^\s,;]+)",
+        @"(?i)([""']?(?:api[_-]?key|token|secret|password|authorization)[""']?\s*[:=]\s*[""']?)([^""'\s,;}\]]+)",
         RegexOptions.Compiled);
 
     public SecretInput Create(string value) => new(value);
@@ -18,6 +18,6 @@ public sealed class CredentialService : ICredentialService
             return text;
         }
 
-        return SecretPattern.Replace(text, "$1$2[REDACTED]");
+        return SecretPattern.Replace(text, "$1[REDACTED]");
     }
 }

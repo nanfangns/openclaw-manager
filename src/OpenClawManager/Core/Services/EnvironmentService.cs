@@ -21,6 +21,7 @@ public sealed class EnvironmentService : IEnvironmentService
 
     public async Task<EnvironmentSnapshot> DetectAsync(CancellationToken cancellationToken)
     {
+        PathEnvironment.RefreshProcessPath();
         var nodePath = await FindExecutableAsync("node", cancellationToken);
         var npmPath = await FindExecutableAsync("npm", cancellationToken);
         var openClawPath = await FindExecutableAsync("openclaw", cancellationToken);
@@ -95,7 +96,7 @@ public sealed class EnvironmentService : IEnvironmentService
             new ProcessRunOptions(TimeSpan.FromSeconds(10)),
             cancellationToken);
         return result.IsSuccess
-            ? result.StandardOutput.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+            ? result.StandardOutput.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim()
             : null;
     }
 

@@ -52,6 +52,26 @@ public sealed class InstallCoordinatorTests
         Assert.False(fakes.Node.Called);
     }
 
+    [Fact]
+    public async Task Persists_resource_ownership_when_final_verification_fails()
+    {
+        var fakes = FakeSet.Success();
+        fakes.Verifier.Result = new VerificationReport(
+            DateTimeOffset.UtcNow,
+            false,
+            new[] { new VerificationCheck("model", "模型服务", VerificationCheckStatus.Failed, "模型不可用") });
+        var coordinator = fakes.CreateCoordinator();
+
+        var result = await coordinator.RunAsync(
+            new InstallOptions(),
+            new Progress<InstallProgress>(),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(InstallStep.HealthChecking, fakes.State.CurrentStep);
+        Assert.True(fakes.State.GatewayInstalledByManager);
+    }
+
     private sealed class FakeSet
     {
         public FakeSet()
@@ -61,6 +81,7 @@ public sealed class InstallCoordinatorTests
             OpenClaw = new FakeOpenClaw();
             Config = new FakeConfig();
             Gateway = new FakeGateway();
+            Verifier = new FakeVerifier();
             State = InstallState.Empty;
             Logs = new LogService(new OpenClawManager.Infrastructure.PathLayout(
                 Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))));
@@ -71,6 +92,7 @@ public sealed class InstallCoordinatorTests
         public FakeOpenClaw OpenClaw { get; }
         public FakeConfig Config { get; }
         public FakeGateway Gateway { get; }
+        public FakeVerifier Verifier { get; }
         public InstallState State { get; set; }
         public LogService Logs { get; }
 
@@ -84,7 +106,8 @@ public sealed class InstallCoordinatorTests
                 Config,
                 Gateway,
                 new FakeStateStore(this),
-                Logs);
+                Logs,
+                Verifier);
     }
 
     private sealed class FakeEnvironment : IEnvironmentService
@@ -119,6 +142,8 @@ public sealed class InstallCoordinatorTests
             => Task.FromResult(new CommandResult(0, string.Empty, string.Empty, TimeSpan.Zero, false, false));
         public Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
+        public Task<ModelProbeResult> ProbeModelAsync(ModelConfiguration? configuration, CancellationToken cancellationToken)
+            => Task.FromResult(new ModelProbeResult(true, configuration is not null, configuration?.ModelId, "ok"));
     }
 
     private sealed class FakeConfig : IConfigService
@@ -131,6 +156,22 @@ public sealed class InstallCoordinatorTests
         public Task<IReadOnlyList<ConfigBackup>> ListBackupsAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<ConfigBackup>>(Array.Empty<ConfigBackup>());
         public Task RestoreAsync(string backupPath, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class FakeVerifier : IInstallationVerifier
+    {
+        public VerificationReport Result { get; set; } = new(
+            DateTimeOffset.UtcNow,
+            true,
+            Array.Empty<VerificationCheck>());
+
+        public Task<VerificationReport> VerifyAsync(
+            ModelConfiguration? model,
+            bool requireGateway,
+            bool probeModel,
+            IProgress<InstallProgress>? progress,
+            CancellationToken cancellationToken)
+            => Task.FromResult(Result);
     }
 
     private sealed class FakeGateway : IGatewayService

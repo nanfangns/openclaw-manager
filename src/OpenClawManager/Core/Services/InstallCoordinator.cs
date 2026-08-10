@@ -11,6 +11,7 @@ public sealed class InstallCoordinator : IInstallCoordinator
     private readonly IGatewayService _gateway;
     private readonly IStateStore _stateStore;
     private readonly ILogService _logs;
+    private readonly IInstallationVerifier _verifier;
 
     public InstallCoordinator(
         IEnvironmentService environment,
@@ -19,7 +20,8 @@ public sealed class InstallCoordinator : IInstallCoordinator
         IConfigService config,
         IGatewayService gateway,
         IStateStore stateStore,
-        ILogService logs)
+        ILogService logs,
+        IInstallationVerifier? verifier = null)
     {
         _environment = environment;
         _node = node;
@@ -28,6 +30,7 @@ public sealed class InstallCoordinator : IInstallCoordinator
         _gateway = gateway;
         _stateStore = stateStore;
         _logs = logs;
+        _verifier = verifier ?? new InstallationVerifier(environment, openClaw, config, gateway, logs);
     }
 
     public InstallWorkflowState Current { get; private set; } =
@@ -107,6 +110,14 @@ public sealed class InstallCoordinator : IInstallCoordinator
                 if (!configResult.IsSuccess)
                 {
                     await _config.RestoreAsync(backupPath, cancellationToken);
+                    await PersistStateAsync(
+                        node,
+                        openClaw,
+                        installedOpenClaw,
+                        false,
+                        backupPath,
+                        InstallStep.ConfiguringModel,
+                        cancellationToken);
                     return Fail(progress, InstallStep.ConfiguringModel, "模型配置失败，已恢复原配置。");
                 }
             }
@@ -119,6 +130,15 @@ public sealed class InstallCoordinator : IInstallCoordinator
                 {
                     return Fail(progress, InstallStep.InstallingGateway, "Gateway 服务安装失败。");
                 }
+
+                await PersistStateAsync(
+                    node,
+                    openClaw,
+                    installedOpenClaw,
+                    true,
+                    backupPath,
+                    InstallStep.InstallingGateway,
+                    cancellationToken);
 
                 Report(progress, InstallStep.StartingGateway, 82, "正在启动 Gateway");
                 var start = await _gateway.StartAsync(cancellationToken);
@@ -135,17 +155,34 @@ public sealed class InstallCoordinator : IInstallCoordinator
                 }
             }
 
-            var state = await _stateStore.LoadAsync(cancellationToken);
-            await _stateStore.SaveAsync(state with
+            Report(progress, InstallStep.HealthChecking, 96, "正在执行安装后完整验证");
+            var verification = await _verifier.VerifyAsync(
+                options.Model,
+                options.InstallGateway,
+                options.Model is not null,
+                progress,
+                cancellationToken);
+            if (!verification.Succeeded)
             {
-                NodeVersion = node.Version,
-                OpenClawVersion = openClaw.Version,
-                NodeInstalledByManager = state.NodeInstalledByManager || node.InstalledByManager,
-                OpenClawInstalledByManager = state.OpenClawInstalledByManager || installedOpenClaw,
-                GatewayInstalledByManager = state.GatewayInstalledByManager || options.InstallGateway,
-                ConfigBackups = state.ConfigBackups.Append(backupPath).ToArray(),
-                CurrentStep = InstallStep.Completed
-            }, cancellationToken);
+                await PersistStateAsync(
+                    node,
+                    openClaw,
+                    installedOpenClaw,
+                    options.InstallGateway,
+                    backupPath,
+                    InstallStep.HealthChecking,
+                    cancellationToken);
+                return Fail(progress, InstallStep.HealthChecking, $"安装后验证失败：{verification.Summary}");
+            }
+
+            await PersistStateAsync(
+                node,
+                openClaw,
+                installedOpenClaw,
+                options.InstallGateway,
+                backupPath,
+                InstallStep.Completed,
+                cancellationToken);
 
             Report(progress, InstallStep.Completed, 100, "安装完成");
             Current = new InstallWorkflowState(InstallStep.Completed, 100, "安装完成", false, true, false);
@@ -216,6 +253,46 @@ public sealed class InstallCoordinator : IInstallCoordinator
             ["step"] = step.ToString(),
             ["percent"] = percent.ToString()
         });
+    }
+
+    private async Task PersistStateAsync(
+        NodeResult node,
+        OpenClawVersionResult openClaw,
+        bool installedOpenClaw,
+        bool installedGateway,
+        string backupPath,
+        InstallStep step,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var state = await _stateStore.LoadAsync(cancellationToken);
+            var backups = state.ConfigBackups.Contains(backupPath, StringComparer.OrdinalIgnoreCase)
+                ? state.ConfigBackups
+                : state.ConfigBackups.Append(backupPath).ToArray();
+            await _stateStore.SaveAsync(state with
+            {
+                NodeVersion = node.Version ?? state.NodeVersion,
+                OpenClawVersion = openClaw.Version ?? state.OpenClawVersion,
+                NodeInstalledByManager = state.NodeInstalledByManager || node.InstalledByManager,
+                OpenClawInstalledByManager = state.OpenClawInstalledByManager || installedOpenClaw,
+                GatewayInstalledByManager = state.GatewayInstalledByManager || installedGateway,
+                ConfigBackups = backups,
+                CurrentStep = step
+            }, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logs.Write(AppLogLevel.Warning, "保存安装状态失败", new Dictionary<string, string>
+            {
+                ["error"] = ex.Message,
+                ["step"] = step.ToString()
+            });
+        }
     }
 
     private InstallWorkflowResult Fail(IProgress<InstallProgress> progress, InstallStep step, string message)

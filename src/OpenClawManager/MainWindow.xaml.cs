@@ -16,13 +16,15 @@ public partial class MainWindow : Window
     private readonly IGatewayService _gateway;
     private readonly IInstallCoordinator _coordinator;
     private readonly IUninstallService _uninstall;
+    private readonly IDiagnosticsService _diagnostics;
     private readonly LogService _logs;
     private readonly Brush _successBrush;
     private readonly Brush _warningBrush;
     private readonly Brush _dangerBrush;
     private CancellationTokenSource? _operationCancellation;
+    private DiagnosticsReport? _lastDiagnostics;
 
-    public MainWindow(IEnvironmentService environment, IConfigService config, IGatewayService gateway, IInstallCoordinator coordinator, IUninstallService uninstall, LogService logs)
+    public MainWindow(IEnvironmentService environment, IConfigService config, IGatewayService gateway, IInstallCoordinator coordinator, IUninstallService uninstall, IDiagnosticsService diagnostics, LogService logs)
     {
         InitializeComponent();
         _environment = environment;
@@ -30,6 +32,7 @@ public partial class MainWindow : Window
         _gateway = gateway;
         _coordinator = coordinator;
         _uninstall = uninstall;
+        _diagnostics = diagnostics;
         _logs = logs;
         _successBrush = (Brush)FindResource("SuccessBrush");
         _warningBrush = (Brush)FindResource("WarningBrush");
@@ -44,6 +47,7 @@ public partial class MainWindow : Window
     private void Overview_Click(object sender, RoutedEventArgs e) => ShowPage(OverviewPage, "概览", "查看本机 OpenClaw 安装与服务状态");
     private void Install_Click(object sender, RoutedEventArgs e) => ShowPage(InstallPage, "安装与配置", "在线安装运行环境、OpenClaw CLI 和 Gateway");
     private async void Gateway_Click(object sender, RoutedEventArgs e) { ShowPage(GatewayPage, "Gateway", "管理本机 Gateway 服务生命周期"); await RefreshGatewayAsync(); }
+    private void Diagnostics_Click(object sender, RoutedEventArgs e) => ShowPage(DiagnosticsPage, "诊断中心", "检测环境、配置、Gateway 和模型服务");
     private async void Model_Click(object sender, RoutedEventArgs e) { ShowPage(ModelPage, "模型与备份", "配置模型凭据并安全管理 OpenClaw 配置备份"); await RefreshBackupsAsync(); }
     private void Logs_Click(object sender, RoutedEventArgs e) => ShowPage(LogsPage, "运行日志", "查看操作记录（敏感值已脱敏）");
     private async void Uninstall_Click(object sender, RoutedEventArgs e) { ShowPage(UninstallPage, "安全卸载", "按资源归属和明确选择清理 OpenClaw"); await PreviewUninstallAsync(); }
@@ -78,7 +82,8 @@ public partial class MainWindow : Window
             var text = status.IsHealthy ? "运行中" : status.IsInstalled ? "已安装，未运行" : "未安装";
             GatewayStatusText.Text = text;
             GatewayLargeStatusText.Text = text;
-            GatewayDetailText.Text = $"{status.Summary}  |  端口 {status.Port}";
+            var probe = status.ConnectivityProbeSucceeded == false ? "连接探测失败" : status.ConnectivityProbeSucceeded == true ? "连接探测通过" : "未返回连接探测结果";
+            GatewayDetailText.Text = $"{status.Summary}  |  {status.Host}:{status.Port}  |  {probe}";
             GatewayLargeStatusText.Foreground = status.IsHealthy ? _successBrush : _warningBrush;
         }
         catch (Exception ex)
@@ -198,6 +203,60 @@ public partial class MainWindow : Window
         BackupStatusText.Text = backups.Count == 0 ? "尚无备份" : $"共 {backups.Count} 个备份";
     }
 
+    private async Task RunDiagnosticsAsync()
+    {
+        RunDiagnosticsButton.IsEnabled = false;
+        ExportDiagnosticsButton.IsEnabled = false;
+        DiagnosticsSummaryText.Text = "正在执行环境、配置、Gateway 和模型探测；模型探测可能产生少量 API 请求。";
+        DiagnosticsSummaryText.Foreground = _warningBrush;
+        try
+        {
+            _lastDiagnostics = await _diagnostics.CollectAsync(CancellationToken.None);
+            DiagnosticsList.ItemsSource = _lastDiagnostics.Verification.Checks;
+            DiagnosticsSummaryText.Text = _lastDiagnostics.Verification.Summary;
+            DiagnosticsSummaryText.Foreground = _lastDiagnostics.Verification.Succeeded ? _successBrush : _dangerBrush;
+            ExportDiagnosticsButton.IsEnabled = true;
+        }
+        catch (Exception ex)
+        {
+            _lastDiagnostics = null;
+            DiagnosticsList.ItemsSource = null;
+            DiagnosticsSummaryText.Text = $"诊断失败：{ex.Message}";
+            DiagnosticsSummaryText.Foreground = _dangerBrush;
+        }
+        finally
+        {
+            RunDiagnosticsButton.IsEnabled = true;
+        }
+    }
+
+    private async void RunDiagnostics_Click(object sender, RoutedEventArgs e) => await RunDiagnosticsAsync();
+
+    private async void ExportDiagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_lastDiagnostics is null)
+            {
+                await RunDiagnosticsAsync();
+            }
+
+            if (_lastDiagnostics is null)
+            {
+                return;
+            }
+
+            var path = await _diagnostics.ExportAsync(_lastDiagnostics, CancellationToken.None);
+            DiagnosticsSummaryText.Text = $"诊断包已导出：{path}";
+            DiagnosticsSummaryText.Foreground = _successBrush;
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsSummaryText.Text = $"导出失败：{ex.Message}";
+            DiagnosticsSummaryText.Foreground = _dangerBrush;
+        }
+    }
+
     private async void PreviewUninstall_Click(object sender, RoutedEventArgs e) => await PreviewUninstallAsync();
 
     private async Task PreviewUninstallAsync()
@@ -255,7 +314,7 @@ public partial class MainWindow : Window
         var enabled = ConfigureModelCheckBox.IsChecked == true;
         ModelConfigurationPanel.IsEnabled = enabled;
         ModelConfigurationHintText.Text = enabled
-            ? "模型配置已启用，安装时会写入 OpenClaw。API Key 只会通过安全输入传递。"
+            ? "模型配置已启用，安装时会写入 OpenClaw，并执行一次最小模型探测。API Key 只会通过安全输入传递，探测可能产生少量费用。"
             : "先勾选左侧“同时配置模型 API”，这里的内容才会在安装时写入 OpenClaw。";
     }
 
@@ -276,6 +335,7 @@ public partial class MainWindow : Window
         OverviewPage.Visibility = Visibility.Collapsed;
         InstallPage.Visibility = Visibility.Collapsed;
         GatewayPage.Visibility = Visibility.Collapsed;
+        DiagnosticsPage.Visibility = Visibility.Collapsed;
         ModelPage.Visibility = Visibility.Collapsed;
         LogsPage.Visibility = Visibility.Collapsed;
         UninstallPage.Visibility = Visibility.Collapsed;

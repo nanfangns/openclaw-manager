@@ -21,11 +21,13 @@ public partial class App : Application
         var node = new NodeService(environment, runner, logs, elevation);
         var openClaw = new OpenClawCliService(runner, logs);
         var config = new ConfigService(paths, runner, credentials, logs);
-        var gateway = new GatewayService(runner);
-        var coordinator = new InstallCoordinator(environment, node, openClaw, config, gateway, stateStore, logs);
+        var gateway = new GatewayService(runner, credentials);
+        var verifier = new InstallationVerifier(environment, openClaw, config, gateway, logs);
+        var coordinator = new InstallCoordinator(environment, node, openClaw, config, gateway, stateStore, logs, verifier);
+        var diagnostics = new DiagnosticsService(paths, environment, verifier, stateStore, logs);
         var uninstall = new UninstallService(paths, stateStore, openClaw, gateway, config, elevation, logs);
 
-        MainWindow = new MainWindow(environment, config, gateway, coordinator, uninstall, logs);
+        MainWindow = new MainWindow(environment, config, gateway, coordinator, uninstall, diagnostics, logs);
         MainWindow.Show();
     }
 

@@ -37,6 +37,18 @@ public sealed class ConfigServiceTests
         Assert.Contains("[REDACTED]", text);
     }
 
+    [Fact]
+    public void Credential_service_redacts_json_secret_values()
+    {
+        var service = new CredentialService();
+
+        var text = service.Redact("{\"token\":\"json-secret\",\"apiKey\":\"another-secret\"}");
+
+        Assert.DoesNotContain("json-secret", text);
+        Assert.DoesNotContain("another-secret", text);
+        Assert.Contains("[REDACTED]", text);
+    }
+
     private static ConfigService CreateService(PathLayout paths)
         => new(
             paths,

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using OpenClawManager.Core.Models;
 using OpenClawManager.Infrastructure;
 
@@ -16,6 +17,7 @@ public sealed class OpenClawCliService : IOpenClawCliService
 
     public async Task<OpenClawVersionResult> GetVersionAsync(CancellationToken cancellationToken)
     {
+        PathEnvironment.RefreshProcessPath();
         var pathResult = await _runner.RunAsync(
             "where.exe",
             new[] { CommandCatalog.OpenClaw },
@@ -90,5 +92,224 @@ public sealed class OpenClawCliService : IOpenClawCliService
             .Select(line => line.Trim())
             .Where(line => line.Length > 0)
             .ToArray();
+    }
+
+    public async Task<ModelProbeResult> ProbeModelAsync(
+        ModelConfiguration? configuration,
+        CancellationToken cancellationToken)
+    {
+        PathEnvironment.RefreshProcessPath();
+        var environment = new Dictionary<string, string?>();
+        if (configuration is not null)
+        {
+            var provider = ModelProviderCatalog.Find(configuration.ProviderId);
+            if (provider?.EnvironmentVariable is not null && !string.IsNullOrWhiteSpace(configuration.ApiKey))
+            {
+                environment[provider.EnvironmentVariable] = configuration.ApiKey;
+            }
+        }
+
+        var result = await _runner.RunAsync(
+            CommandCatalog.OpenClaw,
+            CommandCatalog.OpenClawModelsStatusJsonProbe(),
+            new ProcessRunOptions(TimeSpan.FromMinutes(2), Environment: environment),
+            cancellationToken);
+        var output = string.Join(
+            Environment.NewLine,
+            new[] { result.StandardOutput, result.StandardError }
+                .Where(value => !string.IsNullOrWhiteSpace(value)))
+            .Trim();
+        var safeOutput = _logs.Redact(output);
+        var model = configuration is null
+            ? TryReadModel(output)
+            : string.IsNullOrWhiteSpace(configuration.ModelId)
+                ? configuration.ProviderId
+                : configuration.ModelId.Contains('/', StringComparison.Ordinal)
+                    ? configuration.ModelId
+                    : $"{configuration.ProviderId}/{configuration.ModelId}";
+        var configured = configuration is not null || !ContainsNoModel(output);
+
+        if (!result.IsSuccess)
+        {
+            var reason = FindFailureReason(output);
+            return new ModelProbeResult(
+                false,
+                configured,
+                model,
+                string.IsNullOrWhiteSpace(reason) ? "模型探测失败" : $"模型探测失败：{reason}",
+                safeOutput);
+        }
+
+        if (!configured)
+        {
+            return new ModelProbeResult(true, false, null, "未发现已配置模型", safeOutput);
+        }
+
+        if (ContainsProbeFailure(output))
+        {
+            return new ModelProbeResult(false, true, model, $"模型探测失败：{FindFailureReason(output) ?? "服务商或模型不可用"}", safeOutput);
+        }
+
+        return new ModelProbeResult(true, true, model, "模型探测成功", safeOutput);
+    }
+
+    private static string? TryReadModel(string output)
+    {
+        var json = ExtractJsonObject(output);
+        if (json is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return FindString(document.RootElement, "model", "modelId", "defaultModel", "resolvedModel");
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static bool ContainsNoModel(string output)
+        => output.Contains("no_model", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("no model", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("not configured", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("未配置", StringComparison.OrdinalIgnoreCase);
+
+    private static bool ContainsProbeFailure(string output)
+    {
+        var json = ExtractJsonObject(output);
+        if (json is not null)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(json);
+                foreach (var property in EnumerateProperties(document.RootElement))
+                {
+                    var name = property.Name;
+                    if (name.Equals("status", StringComparison.OrdinalIgnoreCase)
+                        || name.Equals("state", StringComparison.OrdinalIgnoreCase)
+                        || name.Equals("result", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (property.Value.ValueKind == JsonValueKind.String && IsFailureStatus(property.Value.GetString()))
+                        {
+                            return true;
+                        }
+                    }
+                    else if ((name.Equals("error", StringComparison.OrdinalIgnoreCase)
+                              || name.Equals("reason", StringComparison.OrdinalIgnoreCase))
+                             && property.Value.ValueKind == JsonValueKind.String
+                             && !string.IsNullOrWhiteSpace(property.Value.GetString()))
+                    {
+                        return true;
+                    }
+                    else if ((name.Equals("ok", StringComparison.OrdinalIgnoreCase)
+                              || name.Equals("healthy", StringComparison.OrdinalIgnoreCase)
+                              || name.Equals("connected", StringComparison.OrdinalIgnoreCase)
+                              || name.Equals("success", StringComparison.OrdinalIgnoreCase))
+                             && property.Value.ValueKind == JsonValueKind.False)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (JsonException)
+            {
+                // Fall back to text matching for CLI versions that prefix malformed JSON.
+            }
+        }
+
+        return ContainsProbeFailureText(output);
+    }
+
+    private static bool ContainsProbeFailureText(string output)
+        => output.Contains("unknown model", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("invalid model", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("unauthorized", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("authentication", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("timeout", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("failed", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("error", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("unavailable", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("错误", StringComparison.OrdinalIgnoreCase)
+            || output.Contains("失败", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsFailureStatus(string? status)
+        => status is not null && (status.Equals("error", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("failed", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("unknown", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("timeout", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("unavailable", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("missing", StringComparison.OrdinalIgnoreCase));
+
+    private static IEnumerable<JsonProperty> EnumerateProperties(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                yield return property;
+                foreach (var nested in EnumerateProperties(property.Value))
+                {
+                    yield return nested;
+                }
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+            {
+                foreach (var nested in EnumerateProperties(item))
+                {
+                    yield return nested;
+                }
+            }
+        }
+    }
+
+    private static string? FindFailureReason(string output)
+    {
+        var candidates = new[] { "unknown model", "invalid model", "unauthorized", "authentication failed", "timeout", "not configured", "error", "failed" };
+        return candidates.FirstOrDefault(candidate => output.Contains(candidate, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string? FindString(JsonElement element, params string[] names)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        foreach (var name in names)
+        {
+            if (element.TryGetProperty(name, out var direct) && direct.ValueKind == JsonValueKind.String)
+            {
+                return direct.GetString();
+            }
+        }
+
+        foreach (var property in element.EnumerateObject())
+        {
+            var nested = property.Value.ValueKind == JsonValueKind.Object
+                ? FindString(property.Value, names)
+                : null;
+            if (nested is not null)
+            {
+                return nested;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? ExtractJsonObject(string output)
+    {
+        var start = output.IndexOf('{');
+        var end = output.LastIndexOf('}');
+        return start >= 0 && end > start ? output[start..(end + 1)] : null;
     }
 }

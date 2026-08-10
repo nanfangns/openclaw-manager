@@ -1,4 +1,3 @@
-using System.Text.Json;
 using OpenClawManager.Core.Models;
 using OpenClawManager.Infrastructure;
 
@@ -7,10 +6,12 @@ namespace OpenClawManager.Core.Services;
 public sealed class GatewayService : IGatewayService
 {
     private readonly IProcessRunner _runner;
+    private readonly ICredentialService _credentials;
 
-    public GatewayService(IProcessRunner runner)
+    public GatewayService(IProcessRunner runner, ICredentialService? credentials = null)
     {
         _runner = runner;
+        _credentials = credentials ?? new CredentialService();
     }
 
     public async Task<GatewayStatus> GetStatusAsync(CancellationToken cancellationToken)
@@ -23,19 +24,44 @@ public sealed class GatewayService : IGatewayService
 
         if (!result.IsSuccess)
         {
-            return new GatewayStatus(false, false, false, 18789, "Gateway 未安装或状态不可用", result.StandardError);
+            var detail = string.Join(
+                Environment.NewLine,
+                new[] { result.StandardOutput, result.StandardError }
+                    .Where(value => !string.IsNullOrWhiteSpace(value)))
+                .Trim();
+            var missing = detail.Contains("not recognized", StringComparison.OrdinalIgnoreCase)
+                || detail.Contains("command not found", StringComparison.OrdinalIgnoreCase)
+                || detail.Contains("找不到", StringComparison.OrdinalIgnoreCase);
+            return new GatewayStatus(
+                !missing,
+                false,
+                false,
+                18789,
+                missing ? "Gateway 未安装或 CLI 不可用" : "Gateway 状态检查失败",
+                _credentials.Redact(detail));
         }
 
-        if (TryParseJson(result.StandardOutput, out var status))
+        if (GatewayStatusParser.TryParse(result.StandardOutput, out var status))
         {
-            return status;
+            return status with { Detail = _credentials.Redact(status.Detail ?? string.Empty) };
         }
 
         var output = result.StandardOutput;
         var running = output.Contains("running", StringComparison.OrdinalIgnoreCase)
             && !output.Contains("stopped", StringComparison.OrdinalIgnoreCase);
-        var healthy = running || output.Contains("healthy", StringComparison.OrdinalIgnoreCase);
-        return new GatewayStatus(true, running, healthy, 18789, running ? "Gateway 正在运行" : "Gateway 已安装但未运行", output.Trim());
+        var probeFailed = output.Contains("probe", StringComparison.OrdinalIgnoreCase)
+            && (output.Contains("failed", StringComparison.OrdinalIgnoreCase)
+                || output.Contains("error", StringComparison.OrdinalIgnoreCase)
+                || output.Contains("timeout", StringComparison.OrdinalIgnoreCase));
+        var healthy = running && !probeFailed;
+        return new GatewayStatus(
+            true,
+            running,
+            healthy,
+            18789,
+            healthy ? "Gateway 运行正常" : running ? "Gateway 正在运行，但连接探测未通过" : "Gateway 已安装但未运行",
+            _credentials.Redact(output.Trim()),
+            ConnectivityProbeSucceeded: probeFailed ? false : null);
     }
 
     public Task<CommandResult> InstallAsync(CancellationToken cancellationToken)
@@ -62,43 +88,4 @@ public sealed class GatewayService : IGatewayService
             new ProcessRunOptions(TimeSpan.FromMinutes(2)),
             cancellationToken);
 
-    private static bool TryParseJson(string output, out GatewayStatus status)
-    {
-        try
-        {
-            using var document = JsonDocument.Parse(output);
-            var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object)
-            {
-                status = default!;
-                return false;
-            }
-
-            var running = ReadBool(root, "running") || ReadString(root, "status")?.Equals("running", StringComparison.OrdinalIgnoreCase) == true;
-            var healthy = ReadBool(root, "healthy") || running;
-            var port = root.TryGetProperty("port", out var portElement) && portElement.TryGetInt32(out var parsedPort)
-                ? parsedPort
-                : 18789;
-            status = new GatewayStatus(true, running, healthy, port, running ? "Gateway 正在运行" : "Gateway 已安装但未运行", output.Trim());
-            return true;
-        }
-        catch (JsonException)
-        {
-            status = default!;
-            return false;
-        }
-        catch (InvalidOperationException)
-        {
-            status = default!;
-            return false;
-        }
-    }
-
-    private static bool ReadBool(JsonElement root, string name)
-        => root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.True;
-
-    private static string? ReadString(JsonElement root, string name)
-        => root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : null;
 }

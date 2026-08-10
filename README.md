@@ -17,7 +17,7 @@ OpenClaw Manager 的目标是把 OpenClaw 的安装、运行环境准备和日�
 
 本项目是 **OpenClaw 的安装与管理工具**，不是 OpenClaw 本体，也不是聊天客户端。OpenClaw 项目本身请前往[官方仓库](https://github.com/openclaw/openclaw)了解。
 
-> 当前版本：`v0.1.3`。项目处于早期预览阶段，核心安装和管理流程已落地，界面和兼容性仍会持续完善。
+> 当前版本：`v0.2.0`。项目处于早期预览阶段，核心安装、验证和诊断流程已落地，界面和兼容性仍会持续完善。
 
 ## 为什么需要它
 
@@ -36,9 +36,10 @@ OpenClaw Manager 的目标是把 OpenClaw 的安装、运行环境准备和日�
 | 模块 | 能力 |
 | --- | --- |
 | 环境检测 | 检查 Windows 架构、Node.js、npm、OpenClaw CLI、Gateway 端口和网络/磁盘条件 |
-| 一键安装 | 必要时下载并校验官方 Node.js x64 MSI，然后安装并验证 `openclaw@latest` |
-| Gateway | 安装、启动、停止、重启、状态检查和健康检查；默认端口 `18789` |
-| 模型配置 | 支持 OpenAI、Anthropic、Google Gemini、DeepSeek、OpenRouter 和自定义 OpenAI-compatible 服务 |
+| 一键安装 | 必要时下载并校验官方 Node.js x64 MSI，然后安装并验证 `openclaw@latest`；安装后执行完整验证 |
+| Gateway | 安装、启动、停止、重启、状态检查和连接探测；默认端口 `18789` |
+| 模型配置 | 支持 OpenAI、Anthropic、Google Gemini、DeepSeek、OpenRouter 和自定义 OpenAI-compatible 服务；可执行实际模型探测 |
+| 诊断中心 | 重新检查 PATH、Node.js、npm、OpenClaw、配置、Gateway 和模型；可导出脱敏诊断包 |
 | 配置备份 | 备份 `%USERPROFILE%\.openclaw`，保存时间戳、文件清单和 SHA-256 哈希 |
 | 日志 | 记录安装和服务操作；API Key、Token、Secret、Password 等敏感值自动脱敏 |
 | 安全卸载 | 分别选择 Gateway、OpenClaw CLI、Node.js、配置、工作区和管理器数据是否清理 |
@@ -51,8 +52,8 @@ OpenClaw Manager 的目标是把 OpenClaw 的安装、运行环境准备和日�
 
 当前版本：
 
-- [下载 OpenClaw Manager v0.1.3](https://github.com/nanfangns/openclaw-manager/releases/tag/v0.1.3)
-- [直接下载安装包](https://github.com/nanfangns/openclaw-manager/releases/download/v0.1.3/OpenClawManagerSetup.exe)
+- [下载 OpenClaw Manager v0.2.0](https://github.com/nanfangns/openclaw-manager/releases/tag/v0.2.0)
+- [直接下载安装包](https://github.com/nanfangns/openclaw-manager/releases/download/v0.2.0/OpenClawManagerSetup.exe)
 
 安装程序会：
 
@@ -76,9 +77,17 @@ packaging/output/OpenClawManagerSetup.exe
 3. 如果 Node.js 版本不兼容，保持勾选 **自动安装 Node.js**。
 4. 根据需要勾选 **安装并启动 Gateway 服务**。
 5. 如果要配置模型，选择服务商并填写模型 ID、API Key；自定义服务商还需要填写 Base URL。
-6. 安装完成后，在 **概览** 或 **Gateway** 页面检查运行状态。
+6. 安装完成后，在 **诊断中心** 运行完整验证；模型探测会发起一次最小请求，可能产生少量服务商费用。
 
 Node.js MSI 安装需要管理员权限。网络中断、UAC 取消、端口被占用或官方包源不可访问时，软件会在界面和日志中报告失败原因。
+
+### 诊断包说明
+
+诊断中心导出的 ZIP 包只包含环境摘要、检查结果、管理器状态和最近的脱敏日志，不包含 `.openclaw` 原始配置、API Key、Token 或 Secret。诊断包默认保存到：
+
+```text
+%LOCALAPPDATA%\OpenClawManager\diagnostics
+```
 
 ## 安装包校验
 
@@ -88,10 +97,10 @@ Node.js MSI 安装需要管理员权限。网络中断、UAC 取消、端口被�
 Get-FileHash .\OpenClawManagerSetup.exe -Algorithm SHA256
 ```
 
-`v0.1.3` 安装包 SHA-256：
+`v0.2.0` 安装包 SHA-256：
 
 ```text
-44efe3409189687d82f8bfa0c87c90953df8d3d8e6c7aa388dcd5198ff4915e8
+aaf4a17244f810db847b7f6b6723d9d99b0b006c3ebe8852a4971b8f345b0ee8
 ```
 
 ## 系统要求
@@ -110,7 +119,8 @@ Get-FileHash .\OpenClawManagerSetup.exe -Algorithm SHA256
 %LOCALAPPDATA%\OpenClawManager
 ├─ state.json          # 安装归属、当前状态和资源记录
 ├─ logs\               # JSON Lines 操作日志
-└─ backups\            # 配置备份及 manifest.json
+├─ backups\            # 配置备份及 manifest.json
+└─ diagnostics\        # 导出的脱敏诊断 ZIP
 ```
 
 OpenClaw 用户配置默认位于：
@@ -207,7 +217,7 @@ OpenClawManager.sln
 │  ├─ App.xaml / App.xaml.cs       # WPF 入口和全局资源
 │  ├─ MainWindow.xaml(.cs)         # 主界面、导航和操作编排
 │  ├─ Core/Models/                 # 状态、进度、配置和结果模型
-│  ├─ Core/Services/               # 安装、配置、Gateway、日志和卸载服务
+│  ├─ Core/Services/               # 安装、验证、诊断、配置、Gateway、日志和卸载服务
 │  ├─ Infrastructure/              # 进程、路径、提权和版本策略
 │  └─ Assets/                      # 应用 Logo 和 Windows ICO
 ├─ tests/OpenClawManager.Tests/    # xUnit 单元测试
