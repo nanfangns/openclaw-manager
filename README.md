@@ -139,10 +139,9 @@ API Key 不会直接显示在运行日志中。需要注意：配置文件和备
 - 聊天界面
 - 插件市场
 - Channel / 消息渠道管理
-- Edge TTS 自动部署
 - 默认 LAN 访问
 
-仓库中的 `setup.bat`、`install.ps1`、`build-installer.ps1`、`uninstall.bat`、`快捷操作.bat` 和 `使用指南.txt` 是历史脚本或参考资料，不属于新桌面应用的运行时界面。新应用通过 C# 服务直接调用 `node`、`npm`、`openclaw` 和 `msiexec.exe`。
+仓库只保留当前桌面应用、测试、打包脚本和公开文档。新应用通过 C# 服务直接调用 `node`、`npm`、`openclaw` 和 `msiexec.exe`。
 
 ## 开发环境
 
@@ -213,8 +212,8 @@ OpenClawManager.sln
 │  └─ Assets/                      # 应用 Logo 和 Windows ICO
 ├─ tests/OpenClawManager.Tests/    # xUnit 单元测试
 ├─ packaging/                     # Inno Setup 脚本和本地打包输出
+├─ docs/architecture.md           # 当前实现的架构说明
 ├─ docs/testing/                  # Windows 清洁环境冒烟测试
-├─ docs/superpowers/               # 设计和实施文档
 └─ .github/workflows/ci.yml        # GitHub Actions 构建与测试
 ```
 
@@ -262,4 +261,5 @@ Issue 建议包含：
 
 - [OpenClaw 官方仓库](https://github.com/openclaw/openclaw)
 - [OpenClaw Manager Releases](https://github.com/nanfangns/openclaw-manager/releases)
+- [架构说明](docs/architecture.md)
 - [Windows 清洁环境测试清单](docs/testing/clean-windows-smoke-test.md)
